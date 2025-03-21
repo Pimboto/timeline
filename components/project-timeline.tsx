@@ -1,45 +1,45 @@
-"use client"
-import { useEffect, useState } from "react"
-import { Check, Rocket } from "lucide-react"
-import { motion } from "framer-motion"
+"use client";
+import { useEffect, useState } from "react";
+import { Check, Rocket } from "lucide-react";
+import { motion } from "framer-motion";
+import { TimelineData } from "@/lib/timelineState";
 
 export function ProjectTimeline() {
-  const [timelineData, setTimelineData] = useState<any>(null)
+  const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
 
   useEffect(() => {
-    // Load timeline data from localStorage
-    const savedData = localStorage.getItem("timelineData")
-    if (savedData) {
-      setTimelineData(JSON.parse(savedData))
-    } else {
-      // Initialize with default data if nothing is saved
-      const defaultData = {
-        currentSprint: 2, // 0-based index, so this is Sprint 3
-        sprints: [
-          {
-            completed: true,
-            tasks: [true, true, true], // All tasks completed
-          },
-          {
-            completed: true,
-            tasks: [true, true, true], // All tasks completed
-          },
-          {
-            completed: false,
-            tasks: [true, true, false], // First two tasks completed
-          },
-          {
-            completed: false,
-            tasks: [false, false, false], // No tasks completed
-          },
-        ],
+    // Fetch timeline data from API instead of localStorage
+    const fetchTimelineData = async () => {
+      try {
+        const response = await fetch("/api/timeline");
+        if (response.ok) {
+          const data = await response.json();
+          setTimelineData(data);
+        }
+      } catch (error) {
+        console.error("Error fetching timeline data:", error);
       }
-      setTimelineData(defaultData)
-      localStorage.setItem("timelineData", JSON.stringify(defaultData))
-    }
-  }, [])
+    };
 
-  if (!timelineData) return <div>Loading...</div>
+    fetchTimelineData();
+  }, []);
+
+  if (!timelineData) return <div>Loading...</div>;
+
+  // Calculate the completion percentage for the timeline
+  // If current sprint is completed, include its full width in the progress bar
+  const calculateCompletedWidth = () => {
+    let completedSprintCount = 0;
+
+    // Count completed sprints
+    for (let i = 0; i <= timelineData.currentSprint; i++) {
+      if (i < timelineData.currentSprint || timelineData.sprints[i].completed) {
+        completedSprintCount++;
+      }
+    }
+
+    return `${(completedSprintCount / (milestones.length - 1)) * 100}%`;
+  };
 
   const milestones = [
     {
@@ -50,8 +50,8 @@ export function ProjectTimeline() {
       status: timelineData.sprints[0].completed
         ? "completed"
         : timelineData.currentSprint === 0
-          ? "in-progress"
-          : "upcoming",
+        ? "in-progress"
+        : "upcoming",
       icon: "rocket",
       current: timelineData.currentSprint === 0,
       tasks: [
@@ -69,8 +69,8 @@ export function ProjectTimeline() {
       status: timelineData.sprints[1].completed
         ? "completed"
         : timelineData.currentSprint === 1
-          ? "in-progress"
-          : "upcoming",
+        ? "in-progress"
+        : "upcoming",
       icon: "check",
       current: timelineData.currentSprint === 1,
       tasks: [
@@ -88,8 +88,8 @@ export function ProjectTimeline() {
       status: timelineData.sprints[2].completed
         ? "completed"
         : timelineData.currentSprint === 2
-          ? "in-progress"
-          : "upcoming",
+        ? "in-progress"
+        : "upcoming",
       icon: "check",
       current: timelineData.currentSprint === 2,
       tasks: [
@@ -107,8 +107,8 @@ export function ProjectTimeline() {
       status: timelineData.sprints[3].completed
         ? "completed"
         : timelineData.currentSprint === 3
-          ? "in-progress"
-          : "upcoming",
+        ? "in-progress"
+        : "upcoming",
       icon: "check",
       current: timelineData.currentSprint === 3,
       tasks: [
@@ -118,24 +118,9 @@ export function ProjectTimeline() {
       ],
       taskStatus: timelineData.sprints[3].tasks,
     },
-  ]
+  ];
 
-  // Calculate the completion percentage for the timeline
-  // If current sprint is completed, include its full width in the progress bar
-  const calculateCompletedWidth = () => {
-    let completedSprintCount = 0
-
-    // Count completed sprints
-    for (let i = 0; i <= timelineData.currentSprint; i++) {
-      if (i < timelineData.currentSprint || timelineData.sprints[i].completed) {
-        completedSprintCount++
-      }
-    }
-
-    return `${(completedSprintCount / (milestones.length - 1)) * 100}%`
-  }
-
-  const completedWidth = calculateCompletedWidth()
+  const completedWidth = calculateCompletedWidth();
 
   return (
     <div className="relative pb-20">
@@ -161,7 +146,9 @@ export function ProjectTimeline() {
             <motion.div
               className="absolute top-12 h-2 bg-emerald-500 rounded-full"
               style={{
-                left: `${(timelineData.currentSprint / (milestones.length - 1)) * 100}%`,
+                left: `${
+                  (timelineData.currentSprint / (milestones.length - 1)) * 100
+                }%`,
                 width: `${(1 / (milestones.length - 1)) * 100}%`,
               }}
               animate={{ opacity: [0.3, 0.7, 0.3] }}
@@ -183,8 +170,8 @@ export function ProjectTimeline() {
                   milestone.status === "completed"
                     ? "bg-emerald-500"
                     : milestone.status === "in-progress"
-                      ? "bg-emerald-500 bg-opacity-70"
-                      : "bg-blue-100"
+                    ? "bg-emerald-500 bg-opacity-70"
+                    : "bg-blue-100"
                 }`}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -250,13 +237,16 @@ export function ProjectTimeline() {
               milestone.status === "completed"
                 ? "border-emerald-500"
                 : milestone.status === "in-progress"
-                  ? "border-emerald-300"
-                  : "border-gray-200"
+                ? "border-emerald-300"
+                : "border-gray-200"
             }`}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
-            whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+            whileHover={{
+              y: -5,
+              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+            }}
           >
             <div className="flex items-center mb-3">
               <div
@@ -264,8 +254,8 @@ export function ProjectTimeline() {
                   milestone.status === "completed"
                     ? "bg-emerald-500"
                     : milestone.status === "in-progress"
-                      ? "bg-emerald-500 bg-opacity-70"
-                      : "bg-blue-100"
+                    ? "bg-emerald-500 bg-opacity-70"
+                    : "bg-blue-100"
                 }`}
               >
                 {milestone.icon === "rocket" ? (
@@ -283,20 +273,37 @@ export function ProjectTimeline() {
                   className="flex items-start"
                   initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.7 + index * 0.1 + taskIndex * 0.1, duration: 0.5 }}
+                  transition={{
+                    delay: 0.7 + index * 0.1 + taskIndex * 0.1,
+                    duration: 0.5,
+                  }}
                 >
                   <motion.div
                     className={`w-4 h-4 rounded-full flex items-center justify-center mr-2 mt-0.5 flex-shrink-0 ${
-                      milestone.taskStatus[taskIndex] ? "bg-emerald-500" : "bg-gray-200"
+                      milestone.taskStatus[taskIndex]
+                        ? "bg-emerald-500"
+                        : "bg-gray-200"
                     }`}
-                    animate={milestone.taskStatus[taskIndex] ? { scale: [1, 1.3, 1] } : {}}
+                    animate={
+                      milestone.taskStatus[taskIndex]
+                        ? { scale: [1, 1.3, 1] }
+                        : {}
+                    }
                     transition={{ duration: 0.3 }}
                   >
                     <Check
-                      className={`h-2.5 w-2.5 ${milestone.taskStatus[taskIndex] ? "text-white" : "text-gray-400"}`}
+                      className={`h-2.5 w-2.5 ${
+                        milestone.taskStatus[taskIndex]
+                          ? "text-white"
+                          : "text-gray-400"
+                      }`}
                     />
                   </motion.div>
-                  <span className={`text-gray-700 ${milestone.taskStatus[taskIndex] ? "text-gray-500" : ""}`}>
+                  <span
+                    className={`text-gray-700 ${
+                      milestone.taskStatus[taskIndex] ? "text-gray-500" : ""
+                    }`}
+                  >
                     {task}
                   </span>
                 </motion.li>
@@ -306,6 +313,5 @@ export function ProjectTimeline() {
         ))}
       </div>
     </div>
-  )
+  );
 }
-
